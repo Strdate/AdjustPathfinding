@@ -34,6 +34,11 @@ namespace AdjustPathfinding
             {
                 _processed = false;
             }
+
+            if (UIWindow.Instance && !UIPanelButton.instance && ModInfo.ShowUIButton.value) // If UIPanel has been already initialized && button missing
+            {
+                UIPanelButton.CreateButton();
+            }
         }
     }
 }

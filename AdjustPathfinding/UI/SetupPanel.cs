@@ -15,6 +15,9 @@ namespace AdjustPathfinding.UI
         private UITextField probabilityTF;
         private UICheckBox randBox;
         private UICheckBox activeBox;
+        // 0.2.0
+        private UICheckBox vehicleBox;
+        private UICheckBox pedestrianBox;
         //private UISlider slider;
 
         private UIButton removeButton;
@@ -34,6 +37,8 @@ namespace AdjustPathfinding.UI
                 factorTF.text = "5";
                 randBox.isChecked = false;
                 activeBox.isChecked = false;
+                vehicleBox.isChecked = false;
+                pedestrianBox.isChecked = false;
                 //slider.value = data.probability;
                 probabilityTF.text = "0.7";
                 saveButton.isEnabled = false;
@@ -64,6 +69,8 @@ namespace AdjustPathfinding.UI
             factorTF.text = data.factor.ToString();
             randBox.isChecked = data.randomize;
             activeBox.isChecked = data.active;
+            vehicleBox.isChecked = (data.flags & AdjustedSegment.Flags.AffectVehicles) != AdjustedSegment.Flags.None;
+            pedestrianBox.isChecked = (data.flags & AdjustedSegment.Flags.AffectPedestrians) != AdjustedSegment.Flags.None;
             //slider.value = data.probability;
             probabilityTF.text = data.probability.ToString();
         }
@@ -123,13 +130,26 @@ namespace AdjustPathfinding.UI
             factorLine.height = factorTF.height;
             cumulativeHeight += factorLine.height + 8;
 
+            vehicleBox = UIUtil.CreateCheckBox(this);
+            vehicleBox.relativePosition = new Vector2(8, cumulativeHeight);
+            vehicleBox.text = "Vehicles";
+            vehicleBox.tooltip = "Apply to vehicles";
+            vehicleBox.width = 130;
+
+            pedestrianBox = UIUtil.CreateCheckBox(this);
+            pedestrianBox.relativePosition = new Vector2(16 + vehicleBox.width, cumulativeHeight);
+            pedestrianBox.text = "Pedestrians";
+            pedestrianBox.tooltip = "Apply to pedestrians";
+            pedestrianBox.width = 130;
+
+            cumulativeHeight += vehicleBox.height + 8;
 
             UIPanel randomizeLine = AddUIComponent<UIPanel>();
             randomizeLine.relativePosition = new Vector2(8, cumulativeHeight);
             randomizeLine.width = parent.width;
 
             randBox = UIUtil.CreateCheckBox(randomizeLine);
-            randBox.relativePosition = new Vector2(0, 4);
+            randBox.relativePosition = new Vector2(0, 0);
             randBox.text = "Event probability:";
             randBox.tooltip = "Between 0 and 1. Affects how many vehicles will follow the costum pathfind settings. If turned off, all vehicles will follow";
             randBox.width = 180;
@@ -184,60 +204,7 @@ namespace AdjustPathfinding.UI
             saveButton = UIUtil.CreateButton(lastLine);
             saveButton.relativePosition = Vector2.zero;
             saveButton.text = "Save";
-            saveButton.eventClicked += (e, p) =>
-            {
-                if(AdjustPathfindingTool.Instance.SelectedSegment == 0)
-                {
-                    return;
-                }
-
-                if (!SimulationManager.instance.SimulationPaused)
-                {
-                    UIWindow.ThrowErrorMsg("Simulation must be paused!");
-                    return;
-                }
-
-                if (!isSegmentSelected)
-                {
-                    UIWindow.ThrowErrorMsg("No selected segment!");
-                    return;
-                }
-
-                float newFactor;
-                float newProbability;
-                if (!float.TryParse(factorTF.text, out newFactor) || !float.TryParse(probabilityTF.text, out newProbability) || newProbability > 1 || newProbability < 0)
-                {
-                    UIWindow.ThrowErrorMsg("Invalid fields!");
-                    return;
-                }
-
-                AdjustedSegment data;
-                if(isNewSegment)
-                {
-                    data = new AdjustedSegment(AdjustPathfindingTool.Instance.SelectedSegment);
-                }
-                else
-                {
-                    if (!APManager.Instance.Dictionary.TryGetValue(AdjustPathfindingTool.Instance.SelectedSegment, out data))
-                        Debug.Log("Failed to save data in existing AdjustedSegment.");
-                }
-
-                data.name = nameTF.text;
-                data.factor = newFactor;
-                data.randomize = randBox.isChecked;
-                data.active = activeBox.isChecked;
-                //data.probability = slider.value;
-                data.probability = newProbability;
-
-                if (isNewSegment)
-                {
-                    APManager.Instance.Dictionary.Add(AdjustPathfindingTool.Instance.SelectedSegment, data);
-                    isNewSegment = false;
-                }
-
-                UIWindow.Instance.dropDown.Populate();
-                UIWindow.Instance.SelectSegment(AdjustPathfindingTool.Instance.SelectedSegment);
-            };
+            saveButton.eventClicked += (e, p) => Save();
 
             removeButton = UIUtil.CreateButton(lastLine);
             removeButton.relativePosition = new Vector2(saveButton.width + 8, 0);
@@ -276,6 +243,64 @@ namespace AdjustPathfinding.UI
 
             height = cumulativeHeight;
             UIWindow.Instance.RecalculateHeight();
+        }
+
+        private void Save()
+        {
+            if (AdjustPathfindingTool.Instance.SelectedSegment == 0)
+            {
+                return;
+            }
+
+            if (!SimulationManager.instance.SimulationPaused)
+            {
+                UIWindow.ThrowErrorMsg("Simulation must be paused!");
+                return;
+            }
+
+            if (!isSegmentSelected)
+            {
+                UIWindow.ThrowErrorMsg("No selected segment!");
+                return;
+            }
+
+            float newFactor;
+            float newProbability;
+            if (!float.TryParse(factorTF.text, out newFactor) || !float.TryParse(probabilityTF.text, out newProbability) || newFactor <= 0 || newProbability > 1 || newProbability < 0)
+            {
+                UIWindow.ThrowErrorMsg("Invalid fields!");
+                return;
+            }
+
+            AdjustedSegment data;
+            if (isNewSegment)
+            {
+                data = new AdjustedSegment(AdjustPathfindingTool.Instance.SelectedSegment);
+            }
+            else
+            {
+                if (!APManager.Instance.Dictionary.TryGetValue(AdjustPathfindingTool.Instance.SelectedSegment, out data))
+                    Debug.Log("Failed to save data in existing AdjustedSegment.");
+            }
+
+            data.name = nameTF.text;
+            data.factor = newFactor;
+            data.randomize = randBox.isChecked;
+            data.active = activeBox.isChecked;
+            //data.probability = slider.value;
+            data.probability = newProbability;
+
+            if (vehicleBox.isChecked) data.flags |= AdjustedSegment.Flags.AffectVehicles; else data.flags &= ~AdjustedSegment.Flags.AffectVehicles;
+            if (pedestrianBox.isChecked) data.flags |= AdjustedSegment.Flags.AffectPedestrians; else data.flags &= ~AdjustedSegment.Flags.AffectPedestrians;
+
+            if (isNewSegment)
+            {
+                APManager.Instance.Dictionary.Add(AdjustPathfindingTool.Instance.SelectedSegment, data);
+                isNewSegment = false;
+            }
+
+            UIWindow.Instance.dropDown.Populate();
+            UIWindow.Instance.SelectSegment(AdjustPathfindingTool.Instance.SelectedSegment);
         }
     }
 }

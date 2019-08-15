@@ -90,12 +90,14 @@ namespace AdjustPathfinding.UI
         public override void OnEnable()
         {
             base.OnEnable();
+            isVisible = true;
             //AdjustPathfindingTool.Instance.enabled = true;
         }
 
         public override void OnDisable()
         {
             base.OnDisable();
+            isVisible = false;
             //AdjustPathfindingTool.Instance.enabled = false;
         }
 

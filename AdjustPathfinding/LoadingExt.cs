@@ -4,11 +4,9 @@ using ColossalFramework.UI;
 using Harmony;
 using ICities;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 using UnityEngine;
 
 namespace AdjustPathfinding
@@ -29,7 +27,7 @@ namespace AdjustPathfinding
 
         public void OnCreated(ILoading loading)
         {
-            if(loading.currentMode != AppMode.Game)
+            if (loading.currentMode != AppMode.Game)
             {
                 return;
             }
@@ -53,7 +51,8 @@ namespace AdjustPathfinding
                 try
                 {
                     originalLaneSpeed = GetTMPEMethod();
-                } catch
+                }
+                catch
                 {
                     Debug.LogWarning("Failed to retrieve pointer to TMPE method although it should be loaded");
                     originalLaneSpeed = typeof(PathFind).GetMethod("CalculateLaneSpeed", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -86,17 +85,13 @@ namespace AdjustPathfinding
                 AdjustPathfindingTool.Instance.enabled = false;
             }
 
-            UIPanelButton button = UIPanelButton.CreateButton();
-            if(button != null)
+            if (ModInfo.ShowUIButton.value && mode != LoadMode.NewGame && mode != LoadMode.LoadGame)
             {
-                if (mode != LoadMode.NewGame && mode != LoadMode.LoadGame)
-                {
-                    UIPanelButton.instance.enabled = false;
-                }
-                else
-                {
-                    UIPanelButton.instance.enabled = true;
-                }
+                UIPanelButton.instance.enabled = false;
+            }
+            else
+            {
+                UIPanelButton.instance.enabled = true;
             }
 
             if (UIWindow.Instance == null)

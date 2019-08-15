@@ -12,12 +12,14 @@ namespace AdjustPathfinding
         private static Random random = new Random();
 
         // Patch #1
-        public static void CalculateLaneSpeedPostfix(ref float __result, ref NetSegment segment)
+        public static void CalculateLaneSpeedPostfix(ref float __result, ref NetSegment segment, NetInfo.Lane laneInfo)
         {
             if(APManager.Instance.Dictionary.TryGetValue(FindSegmentId(ref segment), out AdjustedSegment data) && data.active)
             {
                 if(!data.randomize || random.NextDouble() < data.probability )
                 {
+                    if((((data.flags & AdjustedSegment.Flags.AffectVehicles) != AdjustedSegment.Flags.None) && ((laneInfo.m_laneType & NetInfo.LaneType.Vehicle) != NetInfo.LaneType.None))
+                        || (((data.flags & AdjustedSegment.Flags.AffectPedestrians) != AdjustedSegment.Flags.None) && ((laneInfo.m_laneType & NetInfo.LaneType.Pedestrian) != NetInfo.LaneType.None)))
                     __result /= data.factor;
                 }
             }

@@ -11,7 +11,8 @@ namespace AdjustPathfinding.UI
     public class UIPanelButton : UIButton
     {
         private const float BUTTON_HORIZONTAL_POSITION = -9; // 23 - 32
-        public static UIPanelButton instance;
+        private static UIPanelButton _instance;
+        public static UIPanelButton instance { get => _instance ? _instance : CreateButton(); }
 
         public UIPanelButton()
         {
@@ -93,12 +94,12 @@ namespace AdjustPathfinding.UI
 
         public static UIPanelButton CreateButton()
         {
-            if(instance == null)
+            if(_instance == null)
             {
                 var roadsOptionPanel = UIUtils.Instance.FindComponent<UIComponent>("RoadsOptionPanel", null, UIUtils.FindOptions.NameContains);
-                instance = roadsOptionPanel.AddUIComponent<UIPanelButton>();
+                _instance = roadsOptionPanel.AddUIComponent<UIPanelButton>();
             }
-            return instance;
+            return _instance;
         }
     }
 

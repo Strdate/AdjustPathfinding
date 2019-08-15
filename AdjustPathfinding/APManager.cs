@@ -1,4 +1,6 @@
 ﻿using AdjustPathfinding.Util;
+using System.Runtime.Serialization;
+using System.Xml;
 using ColossalFramework.IO;
 using ICities;
 using System;
@@ -33,50 +35,68 @@ namespace AdjustPathfinding
         public override void OnSaveData()
         {
             var array = Dictionary.Values.ToArray();
-            var data = SerializeData(array);
-            var containerObj = new ModData(data);
-            var bytes = SerializeData(containerObj);
-            serializableDataManager.SaveData(DATA_ID, bytes);
+            serializableDataManager.SaveData(DATA_ID,  Serialization.SaveToBytes(array) );
         }
 
         public override void OnLoadData()
         {
             Dictionary.Clear();
-            byte[] bytes = serializableDataManager.LoadData(DATA_ID);
-
-            if (bytes != null)
+            try
             {
-                var containerObj = DeserializeData<ModData>(bytes);
-                var deserializedArray = DeserializeData<AdjustedSegment[]>(containerObj.data);
-                Debug.Log("Deserialized byte[] data. Version: " + containerObj.version);
+                byte[] bytes = serializableDataManager.LoadData(DATA_ID);
+                var array = Serialization.LoadFromBytes(bytes);
 
-                foreach (var e in deserializedArray)
+                if (array != null)
                 {
-                    if (NetUtil.ExistsSegment(e.id))
+                    foreach (var e in array)
                     {
-                        Dictionary.Add(e.id, e);
+                        if (NetUtil.ExistsSegment(e.id))
+                        {
+                            Dictionary.Add(e.id, e);
+                        }
                     }
                 }
             }
-        }
-
-        private static byte[] SerializeData<T>(T obj)
-        {
-            using (MemoryStream stream = new MemoryStream())
+            catch
             {
-                IFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(stream, obj);
-                return stream.ToArray();
+                Debug.LogError("Error when loading mod data!");
+                Dictionary.Clear();
             }
         }
+    }
 
-        private static T DeserializeData<T>(byte[] rawData)
+    [Serializable]
+    public class AdjustedSegment
+    {
+        // 0.1.0
+        public ushort id;
+
+        public string name;
+
+        public bool active = true;
+        public bool randomize = false;
+
+        public float factor = 5;
+        public float probability = 0.7F;
+
+        // 0.2.0
+        public Flags flags = (Flags) 3;
+
+        // --
+
+        public AdjustedSegment() { }
+        public AdjustedSegment(ushort segment)
         {
-            using (MemoryStream ms = new MemoryStream(rawData))
-            {
-                IFormatter br = new BinaryFormatter();
-                return (T)br.Deserialize(ms);
-            }
+            id = segment;
+            name = segment.ToString();
+        }
+
+        [Flags]
+        public enum Flags
+        {
+            None = 0,
+            AffectPedestrians = 1,
+            AffectVehicles = 2
         }
     }
 
@@ -93,24 +113,4 @@ namespace AdjustPathfinding
         }
     }
 
-    [Serializable]
-    public class AdjustedSegment
-    {
-        public ushort id;
-
-        public string name;
-
-        public bool active = true;
-        public bool randomize = false;
-
-        public float factor = 5;
-        public float probability = 0.7F;
-
-        public AdjustedSegment() { }
-        public AdjustedSegment(ushort segment)
-        {
-            id = segment;
-            name = segment.ToString();
-        }
-    }
 }
