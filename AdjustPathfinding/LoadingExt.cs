@@ -43,6 +43,7 @@ namespace AdjustPathfinding
                 if ((current.name.Contains("TrafficManager") || TMPE_IDs.Contains(current.publishedFileID.AsUInt64)) && current.isEnabled)
                 {
                     tmpeDetected = true;
+                    ModInfo.DeveloperInfo += "Traffic Manager detected\nWorkshop ID: " + current.publishedFileID.AsUInt64 + "\nLocal: " + current.name + "\n";
                 }
             }
 
@@ -51,10 +52,14 @@ namespace AdjustPathfinding
                 try
                 {
                     originalLaneSpeed = GetTMPEMethod();
+                    string tmpeVersion = GetTMPEVersion();
+                    ModInfo.DeveloperInfo += "TMPE version: " + tmpeVersion + "\n";
                 }
                 catch
                 {
-                    Debug.LogWarning("Failed to retrieve pointer to TMPE method although it should be loaded");
+                    string text = "Failed to retrieve pointer to TMPE pathfinder although it should be loaded. Binding to vanilla pathfinder";
+                    Debug.LogError(text);
+                    ModInfo.DeveloperInfo += text + "\n";
                     originalLaneSpeed = typeof(PathFind).GetMethod("CalculateLaneSpeed", BindingFlags.NonPublic | BindingFlags.Instance);
                 }
             }
@@ -74,6 +79,13 @@ namespace AdjustPathfinding
         private static MethodInfo GetTMPEMethod()
         {
             return typeof(TrafficManager.Custom.PathFinding.CustomPathFind).GetMethod("CalculateLaneSpeed", BindingFlags.NonPublic | BindingFlags.Instance);
+        }
+
+        // May not be interpreted if tmpe is missing
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string GetTMPEVersion()
+        {
+            return TrafficManager.TrafficManagerMod.Version;
         }
 
         public void OnLevelLoaded(LoadMode mode)

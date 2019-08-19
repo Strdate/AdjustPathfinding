@@ -94,11 +94,15 @@ namespace AdjustPathfinding.UI
 
         public static UIPanelButton CreateButton()
         {
-            if(_instance == null)
+            if (_instance == null)
             {
-                var roadsOptionPanel = UIUtils.Instance.FindComponent<UIComponent>("RoadsOptionPanel", null, UIUtils.FindOptions.NameContains);
-                _instance = roadsOptionPanel.AddUIComponent<UIPanelButton>();
-            }
+                try
+                {
+                    var roadsOptionPanel = UIUtils.Instance.FindComponent<UIComponent>("RoadsOptionPanel", null, UIUtils.FindOptions.NameContains);
+                    _instance = roadsOptionPanel.AddUIComponent<UIPanelButton>();
+                }
+                catch { }
+            }                
             return _instance;
         }
     }

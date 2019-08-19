@@ -18,7 +18,7 @@ namespace AdjustPathfinding
                 var containerObj = DeserializeData<ModData>(bytes);
                 var deserializedArray = DeserializeData<AdjustedSegment[]>(containerObj.data);
                 //Debug.Log("Deserialized byte[] data. Version: " + containerObj.version);
-
+                ModInfo.DeveloperInfo += "Load save data: " + containerObj.version + "\n";
                 // 0.2.0 backward compatibility
                 if(CompareModVersions(containerObj.version,"0.2.0") == -1)
                 {

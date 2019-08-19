@@ -11,7 +11,7 @@ namespace AdjustPathfinding
 {
     public class ModInfo : IUserMod
     {
-        public static readonly string VERSION = "0.2.0";
+        public static readonly string VERSION = "0.3.0";
         public static readonly string SETTINGS_FILENAME = "AdjustPathfinding";
 
         public static readonly SavedInputKey ModShortcut = new SavedInputKey("modShortcut", SETTINGS_FILENAME, SavedInputKey.Encode(KeyCode.P, true, false, false), true);
@@ -23,7 +23,10 @@ namespace AdjustPathfinding
 
         public string Name => "Adjust Pathfinding";
 
-        public string Description => "[" + VERSION + "]";
+        public string Description => "Gives control over vehicle behavior [" + VERSION + "]";
+
+        public static string DeveloperInfo = "Adjust Pathfinding mod by Strad [" + VERSION + "]\nDetour icon by Pierre-Luc Auclair from the Noun Project\nSource code available on Github\n" +
+            "https://github.com/Strdate/AdjustPathfinding\n";
 
         public ModInfo()
         {
@@ -72,9 +75,9 @@ namespace AdjustPathfinding
 
                 group.AddSpace(10);
 
-                group.AddButton("Acknowledgements", () =>
+                group.AddButton("Acknowledgements & Developer Info", () =>
                 {
-                    UIWindow.ThrowErrorMsg("Detour icon by Pierre-Luc Auclair from the Noun Project");
+                    UIWindow.ThrowErrorMsg(DeveloperInfo);
                 });
             }
             catch (Exception e)
