@@ -4,9 +4,9 @@ using ColossalFramework.UI;
 using Harmony;
 using ICities;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace AdjustPathfinding
@@ -17,7 +17,7 @@ namespace AdjustPathfinding
 
         public static HarmonyInstance harmonyInstance;
 
-        private MethodInfo originalLaneSpeed;
+        List<MethodInfo> pathFinds = new List<MethodInfo>();
         private MethodInfo postfixLaneSpeed = typeof(Patches).GetMethod("CalculateLaneSpeedPostfix");
 
         private MethodInfo originalReleaseSegment = typeof(NetManager).GetMethod("ReleaseSegment", BindingFlags.Public | BindingFlags.Instance);
@@ -51,41 +51,55 @@ namespace AdjustPathfinding
             {
                 try
                 {
-                    originalLaneSpeed = GetTMPEMethod();
+                    Type tmpePathfind1 = Type.GetType("TrafficManager.Custom.PathFinding.CustomPathFind, TrafficManager");
+                    pathFinds.Add( tmpePathfind1.GetMethod("CalculateLaneSpeed", BindingFlags.NonPublic | BindingFlags.Instance) );
+                    try
+                    {
+                        Type tmpePathfind2 = Type.GetType("TrafficManager.Custom.PathFinding.CustomPathFind2, TrafficManager");
+                        pathFinds.Add(tmpePathfind2.GetMethod("CalculateLaneSpeed", BindingFlags.NonPublic | BindingFlags.Instance));
+                    } catch { }
                     string tmpeVersion = GetTMPEVersion();
                     ModInfo.DeveloperInfo += "TMPE version: " + tmpeVersion + "\n";
                 }
                 catch
                 {
-                    string text = "Failed to retrieve pointer to TMPE pathfinder although it should be loaded. Binding to vanilla pathfinder";
+                    string text = "Failed to retrieve TMPE version although it should be loaded. Pathfind methods might not be bound";
                     Debug.LogError(text);
                     ModInfo.DeveloperInfo += text + "\n";
-                    originalLaneSpeed = typeof(PathFind).GetMethod("CalculateLaneSpeed", BindingFlags.NonPublic | BindingFlags.Instance);
                 }
+            }
+
+            pathFinds.Add( typeof(PathFind).GetMethod("CalculateLaneSpeed", BindingFlags.NonPublic | BindingFlags.Instance) );
+
+            pathFinds = pathFinds.Where((pf) => pf != null).ToList();
+            ModInfo.DeveloperInfo += "Detoured CalculateLaneSpeed methods: " + pathFinds.Count + "\n";
+            if (pathFinds.Count == 0 || originalReleaseSegment == null)
+            {
+                Debug.LogError("Failed to detour methods");
+                ModInfo.DeveloperInfo += "FAILED to detour methods - mod is not working!\n";
             }
             else
             {
-                originalLaneSpeed = typeof(PathFind).GetMethod("CalculateLaneSpeed", BindingFlags.NonPublic | BindingFlags.Instance);
+                foreach(var originalLaneSpeed in pathFinds)
+                {
+                    harmonyInstance.Patch(originalLaneSpeed, null, new HarmonyMethod(postfixLaneSpeed));
+                }
+                harmonyInstance.Patch(originalReleaseSegment, null, new HarmonyMethod(postfixReleaseSegment));
+                patched = true;
             }
-
-            harmonyInstance.Patch(originalLaneSpeed, null, new HarmonyMethod(postfixLaneSpeed));
-            harmonyInstance.Patch(originalReleaseSegment, null, new HarmonyMethod(postfixReleaseSegment));
-
-            patched = true;
         }
 
-        // May not be interpreted if tmpe is missing
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static MethodInfo GetTMPEMethod()
-        {
-            return typeof(TrafficManager.Custom.PathFinding.CustomPathFind).GetMethod("CalculateLaneSpeed", BindingFlags.NonPublic | BindingFlags.Instance);
-        }
-
-        // May not be interpreted if tmpe is missing
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetTMPEVersion()
         {
-            return TrafficManager.TrafficManagerMod.Version;
+            Version TMPE_Version = Assembly.Load("TrafficManager").GetName().Version;
+            string version = null;
+            try
+            {
+                Type tmpeMod = Type.GetType("TrafficManager.TrafficManagerMod, TrafficManager");
+                version = tmpeMod.GetField("Version").GetValue(null) as string;
+            }
+            catch { version = TMPE_Version.ToString(); }
+            return version;
         }
 
         public void OnLevelLoaded(LoadMode mode)
@@ -122,7 +136,10 @@ namespace AdjustPathfinding
         {
             if (patched)
             {
-                harmonyInstance.Unpatch(originalLaneSpeed, postfixLaneSpeed);
+                foreach (var originalLaneSpeed in pathFinds)
+                {
+                    harmonyInstance.Unpatch(originalLaneSpeed, postfixLaneSpeed);
+                }
                 harmonyInstance.Unpatch(originalReleaseSegment, postfixReleaseSegment);
                 patched = false;
             }

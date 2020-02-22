@@ -11,7 +11,7 @@ namespace AdjustPathfinding
 {
     public class ModInfo : IUserMod
     {
-        public static readonly string VERSION = "0.3.0";
+        public static readonly string VERSION = "0.4.0";
         public static readonly string SETTINGS_FILENAME = "AdjustPathfinding";
 
         public static readonly SavedInputKey ModShortcut = new SavedInputKey("modShortcut", SETTINGS_FILENAME, SavedInputKey.Encode(KeyCode.P, true, false, false), true);
